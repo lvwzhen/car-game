@@ -72,13 +72,13 @@
     </style>
 </head>
 <body>
-    <div id="info">Three.js Racing Game</div>
+    <div id="info">Car Game</div>
     <div id="speed">Speed: 0 km/h</div>
-    <div id="controls">Controls: Arrow Keys or WASD to drive</div>
+    <div id="controls">Controls: Arrow Keys to drive</div>
     <div id="startScreen">
-        <h1>Three.js Racing Game</h1>
-        <p>Use Arrow Keys or WASD to control the car</p>
+        <h1>Car Game</h1>
         <button id="startButton">Start Game</button>
+        <p>Press any key to start</p>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -131,7 +131,13 @@
 
             // Setup event listeners
             window.addEventListener('resize', onWindowResize);
-            document.addEventListener('keydown', (event) => keys[event.code] = true);
+            document.addEventListener('keydown', (event) => {
+                keys[event.code] = true;
+                // Any key can start the game
+                if (!gameStarted) {
+                    startGame();
+                }
+            });
             document.addEventListener('keyup', (event) => keys[event.code] = false);
             
             // Start button event listener
