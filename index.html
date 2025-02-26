@@ -136,12 +136,13 @@
         <p>Press any key to start</p>
     </div>
     <div id="finishScreen">
-        <h1>Congratulations!</h1>
+        <h1>Congratulations! 🎉</h1>
         <div id="finishStats">
             <p>Time: <span id="finishTime">0</span> seconds</p>
             <p>Average Speed: <span id="averageSpeed">0</span> km/h</p>
         </div>
         <button id="restartButton" class="gameButton">Play Again</button>
+        <p>Press Space to restart</p>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -157,7 +158,7 @@
         let isGameRunning = false;
         let gameStarted = false;
         let roadWidth = 20;
-        let roadLength = 300;
+        let roadLength = 3000;
         let keys = {};
         let score = 0;
         let lastObstacleTime = 0;
@@ -218,6 +219,10 @@
                 keys[event.code] = true;
                 // Any key can start the game
                 if (!gameStarted) {
+                    startGame();
+                }
+                // Space key to restart game when finished
+                if (event.code === 'Space' && !isGameRunning && gameStarted) {
                     startGame();
                 }
             });
