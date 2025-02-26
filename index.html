@@ -28,10 +28,14 @@
             top: 20px;
             right: 20px;
             color: white;
-            font-size: 24px;
+            font-size: 16px;
             background-color: rgba(0, 0, 0, 0.5);
             padding: 10px;
             border-radius: 5px;
+            line-height: 1.5;
+        }
+        #speed div {
+            margin: 5px 0;
         }
         #controls {
             position: absolute;
@@ -106,7 +110,10 @@
 </head>
 <body>
     <div id="info">Car Game</div>
-    <div id="speed">Speed: 0 km/h</div>
+    <div id="speed">
+        <div>Speed: 0 km/h</div>
+        <div>Time: <span id="timeDisplay">0:00</span></div>
+    </div>
     <div id="controls">
       <p>Controls: Arrow Keys to drive</p>
       <p>by <a href="https://x.com/lvwzhen" target="_blank">@lvwzhen</a></p>
@@ -204,7 +211,20 @@
             car.position.set(0, 1, 0);
             car.rotation.y = 0;
             speed = 0;
+            updateTimeDisplay();
             animate();
+        }
+
+        function updateTimeDisplay() {
+            if (!gameStarted || !isGameRunning) return;
+            const currentTime = Date.now();
+            const elapsedTime = currentTime - startTime;
+            const minutes = Math.floor(elapsedTime / 60000);
+            const seconds = Math.floor((elapsedTime % 60000) / 1000);
+            const milliseconds = elapsedTime % 1000;
+            document.getElementById('timeDisplay').textContent = 
+                `${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
+            requestAnimationFrame(updateTimeDisplay);
         }
 
         function createRoad() {
@@ -459,7 +479,7 @@
             }
             
             // Update speed display
-            document.getElementById('speed').textContent = `Speed: ${Math.abs(Math.round(speed * 200))} km/h`;
+            document.getElementById('speed').firstElementChild.textContent = `Speed: ${Math.abs(Math.round(speed * 200))} km/h`;
             
             // Handle turning - 修正方向控制，左键对应左转，右键对应右转
             if (speed !== 0) {
