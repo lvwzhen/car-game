@@ -520,11 +520,9 @@
         }
 
         function animate() {
-            if (!isGameRunning) return;
-
             requestAnimationFrame(animate);
 
-            if (gameStarted) {
+            if (gameStarted && isGameRunning) {
                 updateCar();
                 updateObstacles();
 
