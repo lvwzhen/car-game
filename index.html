@@ -112,6 +112,13 @@
             border-radius: 5px;
         }
     </style>
+    <!-- Add audio elements -->
+    <audio id="engineSound" loop preload="auto">
+        <source src="assets/sounds/engine.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="accelerationSound" loop preload="auto">
+        <source src="assets/sounds/acceleration.mp3" type="audio/mpeg">
+    </audio>
 </head>
 <body>
     <div id="info">Car Game</div>
@@ -156,9 +163,27 @@
         let lastObstacleTime = 0;
         let startTime = 0;
         let totalDistance = 0;
+        
+        // Audio variables
+        let engineSound;
+        let accelerationSound;
+        let audioEnabled = false;
+        let isAccelerating = false;
 
         // Initialize the game
         function init() {
+            // Initialize audio
+            engineSound = document.getElementById('engineSound');
+            engineSound.volume = 0.2;
+            engineSound.playbackRate = 1.0;
+            accelerationSound = document.getElementById('accelerationSound');
+            accelerationSound.volume = 0.6;
+            accelerationSound.loop = true;
+
+            // 添加音频初始化处理
+            document.addEventListener('click', initAudio, { once: true });
+            document.addEventListener('keydown', initAudio, { once: true });
+
             // Create scene
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x87CEEB); // Sky blue
@@ -205,6 +230,42 @@
             animate();
         }
 
+        // 初始化音频
+        function initAudio() {
+            if (audioEnabled) return;
+            
+            // 尝试播放引擎声音
+            engineSound.play().then(() => {
+                audioEnabled = true;
+                console.log('Audio enabled');
+            }).catch(e => {
+                console.log('Audio initialization failed:', e);
+                // 显示提示信息
+                const audioMessage = document.createElement('div');
+                audioMessage.style.position = 'fixed';
+                audioMessage.style.top = '20px';
+                audioMessage.style.left = '50%';
+                audioMessage.style.transform = 'translateX(-50%)';
+                audioMessage.style.backgroundColor = 'rgba(0,0,0,0.7)';
+                audioMessage.style.color = 'white';
+                audioMessage.style.padding = '10px 20px';
+                audioMessage.style.borderRadius = '5px';
+                audioMessage.style.zIndex = '1000';
+                audioMessage.textContent = '点击任意位置开启声音';
+                document.body.appendChild(audioMessage);
+                
+                // 点击后再次尝试启用音频
+                document.addEventListener('click', function enableAudio() {
+                    engineSound.play().then(() => {
+                        audioEnabled = true;
+                        audioMessage.remove();
+                        document.removeEventListener('click', enableAudio);
+                        console.log('Audio enabled after click');
+                    });
+                });
+            });
+        }
+
         function startGame() {
             document.getElementById('startScreen').style.display = 'none';
             document.getElementById('finishScreen').style.display = 'none';
@@ -212,10 +273,17 @@
             isGameRunning = true;
             startTime = Date.now();
             totalDistance = 0;
+            
             // Reset car position
             car.position.set(0, 1, 0);
             car.rotation.y = 0;
             speed = 0;
+            
+            // Start engine sound
+            if (audioEnabled) {
+                engineSound.play().catch(e => console.log("Engine sound play failed:", e));
+            }
+            
             updateTimeDisplay();
             animate();
         }
@@ -467,19 +535,37 @@
         }
 
         function updateCar() {
+            const previousSpeed = speed;
+            const currentTime = Date.now();
+            
             // Handle acceleration and deceleration
-            if ((keys['ArrowUp'] || keys['KeyW']) && speed < maxSpeed) {
-                speed += acceleration;
-            } else if ((keys['ArrowDown'] || keys['KeyS']) && speed > -maxSpeed/2) {
-                speed -= acceleration;
+            if (keys['ArrowUp'] || keys['KeyW']) {
+                if (speed < maxSpeed) {
+                    speed += acceleration;
+                }
+                // 简化加速音效处理：只在开始加速时播放一次
+                if (audioEnabled && !isAccelerating) {
+                    accelerationSound.play().catch(e => console.log("Acceleration sound play failed:", e));
+                    isAccelerating = true;
+                }
             } else {
-                // Apply natural deceleration
-                if (speed > 0) {
-                    speed -= deceleration;
-                    if (speed < 0) speed = 0;
-                } else if (speed < 0) {
-                    speed += deceleration;
-                    if (speed > 0) speed = 0;
+                // 简化加速音效处理：松开加速键时停止
+                if (isAccelerating) {
+                    accelerationSound.pause();
+                    isAccelerating = false;
+                }
+                
+                if ((keys['ArrowDown'] || keys['KeyS']) && speed > -maxSpeed/2) {
+                    speed -= acceleration;
+                } else {
+                    // Apply natural deceleration
+                    if (speed > 0) {
+                        speed -= deceleration;
+                        if (speed < 0) speed = 0;
+                    } else if (speed < 0) {
+                        speed += deceleration;
+                        if (speed > 0) speed = 0;
+                    }
                 }
             }
             
@@ -545,6 +631,11 @@
 
         function finishGame() {
             isGameRunning = false;
+            
+            // Stop engine sound
+            engineSound.pause();
+            engineSound.currentTime = 0;
+            
             const endTime = Date.now();
             const timeElapsed = (endTime - startTime) / 1000; // Convert to seconds
             const averageSpeed = (totalDistance / timeElapsed) * 3.6; // Convert to km/h
