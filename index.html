@@ -63,6 +63,32 @@
             align-items: center;
             color: white;
         }
+        #finishScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+        .gameButton {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 20px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
         #startButton {
             background-color: #4CAF50;
             border: none;
@@ -87,8 +113,16 @@
     </div>
     <div id="startScreen">
         <h1>Car Game</h1>
-        <button id="startButton">Start Game</button>
+        <button id="startButton" class="gameButton">Start Game</button>
         <p>Press any key to start</p>
+    </div>
+    <div id="finishScreen">
+        <h1>Congratulations!</h1>
+        <div id="finishStats">
+            <p>Time: <span id="finishTime">0</span> seconds</p>
+            <p>Average Speed: <span id="averageSpeed">0</span> km/h</p>
+        </div>
+        <button id="restartButton" class="gameButton">Play Again</button>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -97,17 +131,19 @@
         let scene, camera, renderer;
         let car, road, obstacles = [];
         let speed = 0;
-        let maxSpeed = 1.0;
+        let maxSpeed = 0.8;
         let acceleration = 0.005;
         let deceleration = 0.0025;
         let turnSpeed = 0.03;
         let isGameRunning = false;
         let gameStarted = false;
         let roadWidth = 20;
-        let roadLength = 1000;
+        let roadLength = 3000;
         let keys = {};
         let score = 0;
         let lastObstacleTime = 0;
+        let startTime = 0;
+        let totalDistance = 0;
 
         // Initialize the game
         function init() {
@@ -116,8 +152,8 @@
             scene.background = new THREE.Color(0x87CEEB); // Sky blue
 
             // Create camera
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 5, 10);
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
+            camera.position.set(0, 8, 15);
             camera.lookAt(0, 0, 0);
 
             // Create renderer
@@ -159,8 +195,15 @@
 
         function startGame() {
             document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('finishScreen').style.display = 'none';
             gameStarted = true;
             isGameRunning = true;
+            startTime = Date.now();
+            totalDistance = 0;
+            // Reset car position
+            car.position.set(0, 1, 0);
+            car.rotation.y = 0;
+            speed = 0;
             animate();
         }
 
@@ -357,7 +400,7 @@
             
             // Position obstacle randomly on the road
             obstacle.position.x = (Math.random() - 0.5) * (roadWidth - 4);
-            obstacle.position.z = -roadLength;
+            obstacle.position.z = car.position.z - 100; // Generate obstacles 100 units ahead of the car
             
             scene.add(obstacle);
             obstacles.push(obstacle);
@@ -367,7 +410,7 @@
             const currentTime = Date.now();
             
             // Create new obstacles at random intervals
-            if (currentTime - lastObstacleTime > 2000 + Math.random() * 2000) {
+            if (currentTime - lastObstacleTime > 2000 + Math.random() * 1500) {
                 createObstacle();
                 lastObstacleTime = currentTime;
             }
@@ -445,7 +488,8 @@
             
             // Adjust camera position to follow car
             camera.position.x = car.position.x;
-            camera.position.z = car.position.z + 8;
+            camera.position.z = car.position.z + 15;
+            camera.position.y = 8;
             camera.lookAt(car.position);
         }
 
@@ -456,18 +500,42 @@
         }
 
         function animate() {
+            if (!isGameRunning) return;
+
             requestAnimationFrame(animate);
-            
+
             if (gameStarted) {
                 updateCar();
                 updateObstacles();
+
+                // Update total distance
+                totalDistance += Math.abs(speed);
+
+                // Check if car has reached the finish line
+                if (car.position.z <= -roadLength + 10) {
+                    finishGame();
+                }
             }
-            
+
             renderer.render(scene, camera);
+        }
+
+        function finishGame() {
+            isGameRunning = false;
+            const endTime = Date.now();
+            const timeElapsed = (endTime - startTime) / 1000; // Convert to seconds
+            const averageSpeed = (totalDistance / timeElapsed) * 3.6; // Convert to km/h
+
+            document.getElementById('finishTime').textContent = timeElapsed.toFixed(2);
+            document.getElementById('averageSpeed').textContent = averageSpeed.toFixed(2);
+            document.getElementById('finishScreen').style.display = 'flex';
         }
 
         // Initialize the game
         init();
+
+        // Add restart button event listener
+        document.getElementById('restartButton').addEventListener('click', startGame);
     </script>
 </body>
 </html>
